@@ -50,5 +50,44 @@ namespace ros
             }
 
         }
+
+        public class CompressedImage : IRosClassInterface
+        {
+            public std_msgs.Header header;
+            public System.String format;
+            public byte[] data;
+            public CompressedImage()
+            {
+                header = new std_msgs.Header();
+                format = "";
+                data = new byte[0];
+            }
+            public CompressedImage(std_msgs.Header _header, System.String _format, byte[] _data)
+            {
+                header = _header;
+                format = _format;
+                data = _data;
+            }
+            public void FromJSON(JSONNode msg)
+            {
+                System.String encoded;
+
+                header.FromJSON(msg["header"]);
+                format = msg["format"].Value;
+
+                encoded = msg["data"];
+                data = System.Convert.FromBase64String(encoded);
+            }
+            public System.String ToJSON()
+            {
+                System.String ret = "{";
+                ret += "\"header\": " + header.ToJSON() + ", ";
+                ret += "\"format\": \"" + format + "\", ";
+                ret += "\"data\": [";
+                ret += System.String.Join(", ", data.Select(a => a.ToString()).ToArray());
+                ret += "]}";
+                return ret;
+            }
+        }
     } // sensor_msgs
 } // ros
