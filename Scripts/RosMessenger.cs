@@ -20,6 +20,12 @@ using System.Text;
 using SimpleJSON;
 using System.Collections;
 
+
+#if UNITY_EDITOR
+using WebSocketSharp;
+using System.Threading;
+#endif
+
 #if !UNITY_EDITOR
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
@@ -33,15 +39,15 @@ using System.Threading.Tasks;
 public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
 {
 
-    
+
     public string host = "192.168.100.127"; // IP address of ROS Master
-    public int port    = 9090;              // default for rosbridge_websocket
+    public int port = 9090;              // default for rosbridge_websocket
     public List<GameObject> ActivationList;
 
     //State variables
     private bool busy = false;
     public bool Con { get; private set; }
-    
+
 
     // List of advertised/subscribed ROS topics
     private List<string> advertiseList;
@@ -50,7 +56,14 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
     // List of queued ROS messages from subscribed topics
     public Dictionary<string, Queue<JSONNode>> topicBuffer;
     public Dictionary<string, string> topicType;
-    
+
+    //WebSocket client from WebSocketSharp
+
+#if UNITY_EDITOR
+    private WebSocket Socket;
+    private Thread runThread;
+#endif
+
     //WebSocket client from Windows.Networking.Sockets
 
 #if !UNITY_EDITOR
@@ -66,13 +79,13 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
         Connect();
         advertiseList = new List<string>();
         subscribeList = new List<string>();
-        topicBuffer   = new Dictionary<string, Queue<JSONNode>>();
-        topicType     = new Dictionary<string, string>();
+        topicBuffer = new Dictionary<string, Queue<JSONNode>>();
+        topicType = new Dictionary<string, string>();
     }
 
     public void Start()
     {
-        StartCoroutine(WaitForConnection());    
+        StartCoroutine(WaitForConnection());
     }
 
     private IEnumerator WaitForConnection()
@@ -91,7 +104,6 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
 
     public void OnDestroy()
     {
-#if !UNITY_EDITOR
         foreach (string topic in advertiseList)
         {
             Unadvertise(topic);
@@ -101,9 +113,7 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
             Unsubscribe(topic);
         }
         Disconnect();
-#endif
     }
-
 
     // HL-rosbridge connection methods
     public void Connect()
@@ -114,6 +124,10 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
             busy = true;
             Debug.Log("Connecting to rosbridge at " + host + ":" + port + "...");
 
+#if UNITY_EDITOR
+            runThread = new Thread(Run);
+            runThread.Start();
+#endif
 
 #if !UNITY_EDITOR
             messageWebSocket = new MessageWebSocket();
@@ -167,6 +181,79 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
         //Add code here to do something with the string that is received.
     }
 
+    // Methods to handle rosbridge messaging
+    public async Task Send(string str)
+    {
+        busy = true;
+        await WebSock_SendMessage(messageWebSocket, str);
+        busy = false;
+    }
+    private async Task WebSock_SendMessage(MessageWebSocket webSock, string message)
+    {
+        dataWriter.WriteString(message);
+        await dataWriter.StoreAsync();
+
+    }
+#endif
+
+#if UNITY_EDITOR
+
+    //Starting connection between Unity play mode and ROS.
+    private void Run()
+    {
+        Socket = new WebSocket("ws://" + host + ":" + port);
+        Socket.OnOpen += (sender, e) => {
+            Con = true;
+            busy = false;
+            Debug.Log("connected!");
+        };
+        Socket.Connect();
+
+        //con = true;
+
+        //Socket.OnMessage +=Editor_MessageRecieved;
+        while (true)
+        {
+            Thread.Sleep(10000);
+        }
+    }
+
+    private void Editor_MessageRecieved(object thing, MessageEventArgs e)
+    {
+        string messageString = e.Data;
+        ParseMessage(messageString);
+    }
+
+    public void Send(string str)
+    {
+        busy = true;
+
+        if (Socket != null && Con)
+        {
+
+            Socket.Send(str);
+        }
+        busy = false;
+    }
+#endif
+
+    public void Disconnect()
+    {
+        //Killing connection
+
+#if !UNITY_EDITOR
+        messageWebSocket.Dispose();
+        messageWebSocket = null;
+#endif
+
+#if UNITY_EDITOR
+        runThread.Abort();
+        Socket.Close();
+#endif
+
+        Con = false;
+    }
+
     private void ParseMessage(string str)
     {
         var N = JSON.Parse(str);
@@ -181,52 +268,33 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
         }
     }
 
-    public void Disconnect()
+    public void Subscribe(string topic, string type)
     {
-        //Killing connection
-        messageWebSocket.Dispose();
-        messageWebSocket = null;
-        Con = false;
-    }
-
-
-    // Methods to handle rosbridge messaging
-    public async Task Send(string str)
-    {
-        busy = true;
-        await WebSock_SendMessage(messageWebSocket, str);
-        busy = false;
-    }
-    private async Task WebSock_SendMessage(MessageWebSocket webSock, string message)
-    {
-       dataWriter.WriteString(message);
-       await dataWriter.StoreAsync();
-       
-    }
-
-    public void Subscribe(string topic, string type){
         string msg = "{\"op\": \"subscribe\", \"topic\": \"" + topic + "\",\"type\": \"" + type + "\"}";
-        
+
         Send(msg);
         subscribeList.Add(topic);
         topicBuffer[topic] = new Queue<JSONNode>();
         topicType[topic] = type;
     }
 
-    public void Unsubscribe(string topic){
+    public void Unsubscribe(string topic)
+    {
         string msg = "{\"op\": \"unsubscribe\", \"topic\": \"" + topic + "\"}";
-        
+
         Send(msg);
         subscribeList.Remove(topic);
     }
 
-    public void Advertise(string topic, string type){
+    public void Advertise(string topic, string type)
+    {
         string msg = "{\"op\": \"advertise\", \"topic\": \"" + topic + "\",\"type\": \"" + type + "\"}";
         Send(msg);
         advertiseList.Add(topic);
     }
 
-    public void Unadvertise(string topic){
+    public void Unadvertise(string topic)
+    {
         string msg = "{\"op\": \"unadvertise\", \"topic\": \"" + topic + "\"}";
         Send(msg);
         advertiseList.Remove(topic);
@@ -238,7 +306,5 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
         Send(msg);
         Debug.Log("Publishing '" + msg + "'");
     }
-
-#endif
 
 }

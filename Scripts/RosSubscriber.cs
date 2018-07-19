@@ -44,26 +44,22 @@ public class RosSubscriber<T>
         QueueSize = queueSize;
         MsgQueue = new Queue<T>();
 
-#if !UNITY_EDITOR
         RosMessenger.Instance.Subscribe(RosTopic, RosType);
         buffer = RosMessenger.Instance.topicBuffer[RosTopic];
 
         Debug.Log("[" + name + "] Subscribed successfully, message type: " + RosType);
-#endif
     }
 
     public void Terminate()
     {
-#if !UNITY_EDITOR
         RosMessenger.Instance.Unsubscribe(RosTopic);
-#endif
     }
 
 
     public T GetNewMessage()
     {
         while ((buffer != null) && (buffer.Count > 0))
-        { 
+        {
             // Custom parser to interpret the JSON data into Unity datatypes
             JSONNode data = buffer.Dequeue();
             T processed = RosMsg.Decode<T>(data);
@@ -71,7 +67,7 @@ public class RosSubscriber<T>
 
             Debug.Log("[" + name + "] Received: " + processed.ToJSON());
 
-            while(MsgQueue.Count > QueueSize)
+            while (MsgQueue.Count > QueueSize)
             {
                 MsgQueue.Dequeue(); // Removes the oldest messages to obtain QueueSize latest messages
             }

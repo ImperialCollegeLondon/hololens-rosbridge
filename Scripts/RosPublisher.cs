@@ -30,27 +30,22 @@ public class RosPublisher<T>
         RosType = RosType.Substring(4, RosType.Length - 4).Replace(".", "/");
         QueueSize = queueSize;
         SendQueue = new Queue<T>();
-                
-#if !UNITY_EDITOR
+
         RosMessenger.Instance.Advertise(RosTopic, RosType);
         Debug.Log("[" + name + "] Advertised successfully");
-#endif
         connected = true;
 
     }
 
     public void Terminate()
     {
-#if !UNITY_EDITOR
-        RosMessenger.Instance.Unadvertise(RosTopic); 
-#endif
+        RosMessenger.Instance.Unadvertise(RosTopic);
     }
 
     public void SendMessage(T data)
     {
         if (connected)
         {
-#if !UNITY_EDITOR
             // Custom parser to interpret the JSON data into Unity datatypes
             if (SendQueue.Count > 0)
             {
@@ -64,7 +59,6 @@ public class RosPublisher<T>
             RosMessenger.Instance.Publish(RosTopic, processed);
 
             Debug.Log("[" + name + "] Publishing: " + processed);
-#endif
         }
         else
         {
