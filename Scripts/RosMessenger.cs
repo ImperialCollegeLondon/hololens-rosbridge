@@ -76,7 +76,6 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
     public void Awake()
     {
         Con = false;
-        Connect();
         advertiseList = new List<string>();
         subscribeList = new List<string>();
         topicBuffer = new Dictionary<string, Queue<JSONNode>>();
