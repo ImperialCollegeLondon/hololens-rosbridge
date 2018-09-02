@@ -36,9 +36,9 @@ using System.Threading.Tasks;
 #endif
 
 [System.Serializable]
-public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
+public class RosMessenger : MonoBehaviour
 {
-
+    public static RosMessenger Instance;
 
     public string host = "192.168.100.127"; // IP address of ROS Master
     public int port = 9090;              // default for rosbridge_websocket
@@ -75,6 +75,13 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
     // Default Unity Object Methods
     new public void Awake()
     {
+        if (Instance != null)
+        {
+            GameObject.Destroy(Instance.gameObject);
+        }
+
+        Instance = this;
+
         Con = false;
         advertiseList = new List<string>();
         subscribeList = new List<string>();
