@@ -73,7 +73,7 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
 #endif
 
     // Default Unity Object Methods
-    public void Awake()
+    new public void Awake()
     {
         Con = false;
         advertiseList = new List<string>();
@@ -101,7 +101,7 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
     {
     }
 
-    public void OnDestroy()
+    new public void OnDestroy()
     {
         foreach (string topic in advertiseList)
         {
@@ -251,6 +251,11 @@ public class RosMessenger : HoloToolkit.Unity.Singleton<RosMessenger>
 #endif
 
         Con = false;
+    }
+
+    private void OnApplicationQuit()
+    {
+        Disconnect();
     }
 
     private void ParseMessage(string str)
