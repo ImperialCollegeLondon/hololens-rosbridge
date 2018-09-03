@@ -73,7 +73,7 @@ public class RosMessenger : MonoBehaviour
 #endif
 
     // Default Unity Object Methods
-    new public void Awake()
+    public void Awake()
     {
         if (Instance != null)
         {
@@ -108,13 +108,13 @@ public class RosMessenger : MonoBehaviour
     {
     }
 
-    new public void OnDestroy()
+    public void OnDestroy()
     {
-        foreach (string topic in advertiseList)
+        foreach (string topic in advertiseList.ToArray())
         {
             Unadvertise(topic);
         }
-        foreach (string topic in subscribeList)
+        foreach (string topic in subscribeList.ToArray())
         {
             Unsubscribe(topic);
         }
@@ -262,7 +262,7 @@ public class RosMessenger : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        Disconnect();
+        OnDestroy();
     }
 
     private void ParseMessage(string str)
