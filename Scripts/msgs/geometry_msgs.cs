@@ -413,8 +413,8 @@ namespace ros
                     temp.FromJSON(t);
                     poses.Add(temp);
                 }
-            
             }
+
             public System.String ToJSON()
             {
                 System.String ret = "{";
