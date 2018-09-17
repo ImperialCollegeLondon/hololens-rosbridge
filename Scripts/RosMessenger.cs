@@ -262,7 +262,7 @@ public class RosMessenger : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        OnDestroy();
+        Disconnect();
     }
 
     private void ParseMessage(string str)
