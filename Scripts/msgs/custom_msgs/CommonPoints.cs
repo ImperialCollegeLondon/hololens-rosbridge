@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace ros
 {
-    namespace ros_world
+    namespace holo_ros_utils
     {
         public class CommonPoints : IRosClassInterface
         {
@@ -13,27 +13,22 @@ namespace ros
             public long nsecs;
             public System.String frame_id;
 
-            public geometry_msgs.Point[] points;
+            public List<geometry_msgs.Point> points;
 
             public CommonPoints()
             {
                 secs = new long();
                 nsecs = new long();
                 frame_id = " ";
-                points = new geometry_msgs.Point[0];
+                points = new List<geometry_msgs.Point>();
             }
 
-            public CommonPoints(long _secs, long _nsecs, System.String _frame_id, geometry_msgs.Point[] _parr)
+            public CommonPoints(long _secs, long _nsecs, System.String _frame_id, List<geometry_msgs.Point> _points)
             {
                 secs = _secs;
                 nsecs = _nsecs;
                 frame_id = _frame_id;
-                points = new geometry_msgs.Point[_parr.Length];
-
-                for (int i = 0; i < _parr.Length; i++)
-                {
-                    points[i] = _parr[i];
-                }
+                points = _points;
             }
 
             public void FromJSON(JSONNode msg)
@@ -42,13 +37,12 @@ namespace ros
                 nsecs = msg["stamp"]["nsecs"];
                 frame_id = msg["frame_id"].Value;
 
-                var msg_points = msg["points"].Children.ToArray();
-
-                for (int i = 0; i < msg_points.Length; i++)
+                var msg_points = msg["points"].Children;
+                foreach (var p in msg_points)
                 {
                     geometry_msgs.Point temp = new geometry_msgs.Point();
-                    temp.FromJSON(msg_points[i]);
-                    points[i] = temp;
+                    temp.FromJSON(p);
+                    points.Add(temp);
                 }
             }
 
