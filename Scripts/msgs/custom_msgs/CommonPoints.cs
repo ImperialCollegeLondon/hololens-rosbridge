@@ -30,9 +30,9 @@ namespace ros
                 frame_id = _frame_id;
                 points = new geometry_msgs.Point[_parr.Length];
 
-                foreach (var p in _parr)
+                for (int i = 0; i < _parr.Length; i++)
                 {
-                    points.Add(p);
+                    points[i] = _parr[i];
                 }
             }
 
@@ -42,11 +42,13 @@ namespace ros
                 nsecs = msg["stamp"]["nsecs"];
                 frame_id = msg["frame_id"].Value;
 
-                foreach (var p in msg["points"].Children)
+                var msg_points = msg["points"].Children.ToArray();
+
+                for (int i = 0; i < msg_points.Length; i++)
                 {
                     geometry_msgs.Point temp = new geometry_msgs.Point();
-                    temp.FromJSON(p);
-                    points.Add(p);
+                    temp.FromJSON(msg_points[i]);
+                    points[i] = temp;
                 }
             }
 
