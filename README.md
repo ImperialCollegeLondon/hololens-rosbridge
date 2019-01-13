@@ -135,7 +135,7 @@ Note that Unity frame axes are different from ROS frame axes in two ways:
 There are a few methods to address this problem: 
 1. A `(x, y, z)` position vector in ROS => `(x, z, y)` vector in Unity
 2. A `(x, y, z)` rotation vector in ROS => `(-x, -z, -y)` vector in Unity
-3. A `(x, y, z, w)` quaternion in ROS => `(x, z, y, -w)` quaternion in Unity
+3. A `(x, y, z, w)` quaternion in ROS => `(x, z, y, w)` quaternion in Unity
 
 ## Data Representation
 
